@@ -85,22 +85,26 @@ def discover_peers(port=8080, timeout=0.1):
         return sorted(set(ip for ip in results if ip))
 
 
-def get_peer_identity(ip, port=8080, timeout=1.0):
+def get_peer_identity(ip, port=8080, timeout=2.0, retries=2):
     """
     Get the identity (hostname) of a peer by calling its /identity endpoint.
     Returns dict with ip, hostname, service or None if unreachable.
     """
-    try:
-        url = f"http://{ip}:{port}/identity"
-        with urlopen(url, timeout=timeout) as response:
-            data = json.loads(response.read().decode())
-            return {
-                "ip": ip,
-                "hostname": data.get("hostname", "unknown"),
-                "service": data.get("service", "unknown")
-            }
-    except (URLError, json.JSONDecodeError, Exception):
-        return {"ip": ip, "hostname": "unreachable", "service": "unknown"}
+    for attempt in range(retries):
+        try:
+            url = f"http://{ip}:{port}/identity"
+            with urlopen(url, timeout=timeout) as response:
+                data = json.loads(response.read().decode())
+                return {
+                    "ip": ip,
+                    "hostname": data.get("hostname", "unknown"),
+                    "service": data.get("service", "unknown")
+                }
+        except (URLError, json.JSONDecodeError, Exception):
+            if attempt < retries - 1:
+                time.sleep(0.2)  # Brief pause before retry
+                continue
+    return {"ip": ip, "hostname": "unreachable", "service": "unknown"}
 
 
 def discover_peers_with_identity(port=8080):
