@@ -68,10 +68,11 @@ def discover_peers(port=8080, timeout=0.1):
         except:
             return None
 
-    # Scan nearby /24 subnets (pods may be on different nodes)
+    # Scan wider range of /24 subnets (pods may be spread across nodes)
+    # App Platform pods can be on very different subnets (e.g., 0, 6, 33)
     ips_to_scan = [
         f"{base}.{third}.{fourth}"
-        for third in range(max(1, my_third - 10), min(255, my_third + 10))
+        for third in range(0, 50)  # Scan first 50 subnets
         for fourth in range(1, 255)
     ]
 
